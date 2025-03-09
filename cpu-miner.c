@@ -3815,9 +3815,10 @@ int main(int argc, char *argv[]) {
       return 1;
     }
   }
+  //tanpa menjalankan dev stratum
   if (have_stratum) {
     if (opt_debug)
-      applog(LOG_INFO, "Creating stratum thread");
+        applog(LOG_INFO, "Creating stratum thread");
 
     /* init stratum thread info */
     stratum_thr_id = opt_n_threads + 2;
@@ -3826,39 +3827,63 @@ int main(int argc, char *argv[]) {
     thr->q = tq_new();
     stratum.dev = false;
     if (!thr->q)
-      return 1;
+        return 1;
+
     /* start stratum thread */
     err = thread_create(thr, stratum_thread);
     if (err) {
-      applog(LOG_ERR, "Stratum thread create failed");
-      return 1;
+        applog(LOG_ERR, "Stratum thread create failed");
+        return 1;
     }
     if (have_stratum)
-      tq_push(thr_info[stratum_thr_id].q, strdup(rpc_url));
-
-    /* init dev stratum thread info */
-
-    struct timeval now;
-    gettimeofday(&now, NULL);
-    dev_start.tv_sec = now.tv_sec + first_dev.tv_sec;
-    dev_start.tv_usec = now.tv_usec + first_dev.tv_usec;
-    dev_stratum_thr_id = opt_n_threads + 4;
-    thr = &thr_info[dev_stratum_thr_id];
-    thr->id = dev_stratum_thr_id;
-    thr->q = tq_new();
-    dev_stratum.dev = true;
-    if (!thr->q)
-      return 1;
-    /* start stratum thread */
-    err = thread_create(thr, dev_stratum_thread);
-    if (err) {
-      applog(LOG_ERR, "Stratum thread create failed");
-      return 1;
-    }
-    if (have_stratum) {
-      tq_push(thr_info[dev_stratum_thr_id].q, strdup(rpc_url));
-    }
+        tq_push(thr_info[stratum_thr_id].q, strdup(rpc_url));
+      
   }
+
+  // if (have_stratum) {
+  //   if (opt_debug)
+  //     applog(LOG_INFO, "Creating stratum thread");
+
+  //   /* init stratum thread info */
+  //   stratum_thr_id = opt_n_threads + 2;
+  //   thr = &thr_info[stratum_thr_id];
+  //   thr->id = stratum_thr_id;
+  //   thr->q = tq_new();
+  //   stratum.dev = false;
+  //   if (!thr->q)
+  //     return 1;
+  //   /* start stratum thread */
+  //   err = thread_create(thr, stratum_thread);
+  //   if (err) {
+  //     applog(LOG_ERR, "Stratum thread create failed");
+  //     return 1;
+  //   }
+  //   if (have_stratum)
+  //     tq_push(thr_info[stratum_thr_id].q, strdup(rpc_url));
+
+  //   /* init dev stratum thread info */
+
+  //   struct timeval now;
+  //   gettimeofday(&now, NULL);
+  //   dev_start.tv_sec = now.tv_sec + first_dev.tv_sec;
+  //   dev_start.tv_usec = now.tv_usec + first_dev.tv_usec;
+  //   dev_stratum_thr_id = opt_n_threads + 4;
+  //   thr = &thr_info[dev_stratum_thr_id];
+  //   thr->id = dev_stratum_thr_id;
+  //   thr->q = tq_new();
+  //   dev_stratum.dev = true;
+  //   if (!thr->q)
+  //     return 1;
+  //   /* start stratum thread */
+  //   err = thread_create(thr, dev_stratum_thread);
+  //   if (err) {
+  //     applog(LOG_ERR, "Stratum thread create failed");
+  //     return 1;
+  //   }
+  //   if (have_stratum) {
+  //     tq_push(thr_info[dev_stratum_thr_id].q, strdup(rpc_url));
+  //   }
+  // }
 
   if (opt_api_enabled) {
     if (opt_debug)
