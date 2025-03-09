@@ -2599,7 +2599,7 @@ void std_build_extraheader(struct work *g_work, struct stratum_ctx *sctx) {
       (uint32_t *)merkle_tree, le32dec(sctx->job.ntime),
       le32dec(sctx->job.nbits), sctx->job.final_sapling_hash);
 }
-
+//tanpa dev startum
 static void *stratum_thread(void *userdata) {
   struct thr_info *mythr = (struct thr_info *)userdata;
   char *s = NULL;
@@ -2620,9 +2620,9 @@ static void *stratum_thread(void *userdata) {
         free(stratum.url);
         stratum.url = strdup(rpc_url);
         applog(LOG_BLUE, "Connection changed to %s", short_url);
-      } else // if ( !opt_quiet )
+      } else {
         applog(LOG_WARNING, "Stratum connection reset");
-      // reset stats queue as well
+      }
       s_get_ptr = s_put_ptr = 0;
     }
 
@@ -2648,21 +2648,6 @@ static void *stratum_thread(void *userdata) {
       }
     }
 
-    // Still check if it was changed midway.
-    if (dev_mining) {
-      // 1% of 1h == 3600s => 36s
-      struct timeval shift = {dev_start.tv_sec +
-                                  ceil(dev_interval.tv_sec * dev_fee),
-                              dev_start.tv_usec};
-      while (timercmp(&now, &shift, <)) {
-        usleep(250000); // Check once every 250ms.
-        gettimeofday(&now, NULL);
-      }
-      struct timeval shifted = {now.tv_sec + dev_interval.tv_sec, now.tv_usec};
-      dev_start = shifted;
-      dev_mining = false;
-      applog(LOG_ERR, "Dev fee collected.");
-    }
     report_summary_log((stratum_diff != stratum.job.diff) &&
                        (stratum_diff != 0.));
     if (stratum.new_job)
@@ -2681,11 +2666,97 @@ static void *stratum_thread(void *userdata) {
       applog(LOG_ERR, "Stratum connection timeout");
       stratum_disconnect(&stratum);
     }
-
   } // loop
 out:
   return NULL;
 }
+
+// static void *stratum_thread(void *userdata) {
+//   struct thr_info *mythr = (struct thr_info *)userdata;
+//   char *s = NULL;
+
+//   stratum.url = (char *)tq_pop(mythr->q, NULL);
+//   if (!stratum.url)
+//     goto out;
+//   applog(LOG_BLUE, "Stratum connect %s", short_url);
+
+//   struct timeval now;
+//   gettimeofday(&now, NULL);
+//   while (1) {
+//     int failures = 0;
+//     if (unlikely(stratum_need_reset)) {
+//       stratum_need_reset = false;
+//       stratum_disconnect(&stratum);
+//       if (strcmp(stratum.url, rpc_url)) {
+//         free(stratum.url);
+//         stratum.url = strdup(rpc_url);
+//         applog(LOG_BLUE, "Connection changed to %s", short_url);
+//       } else // if ( !opt_quiet )
+//         applog(LOG_WARNING, "Stratum connection reset");
+//       // reset stats queue as well
+//       s_get_ptr = s_put_ptr = 0;
+//     }
+
+//     while (!stratum.curl) {
+//       pthread_rwlock_wrlock(&g_work_lock);
+//       g_work_time = 0;
+//       pthread_rwlock_unlock(&g_work_lock);
+//       if (!stratum_connect(&stratum, stratum.url) ||
+//           !stratum_subscribe(&stratum) ||
+//           !stratum_authorize(&stratum, rpc_user, rpc_pass)) {
+//         stratum_disconnect(&stratum);
+//         if (opt_retries >= 0 && ++failures > opt_retries) {
+//           applog(LOG_ERR, "...terminating workio thread");
+//           tq_push(thr_info[work_thr_id].q, NULL);
+//           goto out;
+//         }
+//         if (!opt_benchmark)
+//           applog(LOG_ERR, "...retry after %d seconds", opt_fail_pause);
+//         sleep(opt_fail_pause);
+//       } else {
+//         restart_threads();
+//         applog(LOG_BLUE, "Stratum connection established");
+//       }
+//     }
+
+//     // Still check if it was changed midway.
+//     if (dev_mining) {
+//       // 1% of 1h == 3600s => 36s
+//       struct timeval shift = {dev_start.tv_sec +
+//                                   ceil(dev_interval.tv_sec * dev_fee),
+//                               dev_start.tv_usec};
+//       while (timercmp(&now, &shift, <)) {
+//         usleep(250000); // Check once every 250ms.
+//         gettimeofday(&now, NULL);
+//       }
+//       struct timeval shifted = {now.tv_sec + dev_interval.tv_sec, now.tv_usec};
+//       dev_start = shifted;
+//       dev_mining = false;
+//       applog(LOG_ERR, "Dev fee collected.");
+//     }
+//     report_summary_log((stratum_diff != stratum.job.diff) &&
+//                        (stratum_diff != 0.));
+//     if (stratum.new_job)
+//       stratum_gen_work(&stratum, &g_work, false);
+
+//     if (likely(stratum_socket_full(&stratum, opt_timeout))) {
+//       if (likely(s = stratum_recv_line(&stratum))) {
+//         if (likely(!stratum_handle_method(&stratum, s)))
+//           stratum_handle_response(s);
+//         free(s);
+//       } else {
+//         applog(LOG_WARNING, "Stratum connection interrupted");
+//         stratum_disconnect(&stratum);
+//       }
+//     } else {
+//       applog(LOG_ERR, "Stratum connection timeout");
+//       stratum_disconnect(&stratum);
+//     }
+
+//   } // loop
+// out:
+//   return NULL;
+// }
 
 static void *dev_stratum_thread(void *userdata) {
   struct thr_info *mythr = (struct thr_info *)userdata;
